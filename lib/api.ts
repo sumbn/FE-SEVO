@@ -1,21 +1,37 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { auth } from './auth';
 
-export async function fetchAPI<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+const API_URL = 'http://localhost:3000/api';
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || 'API request failed');
+type RequestOptions = RequestInit & {
+  headers?: Record<string, string>;
+};
+
+export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
+  const token = auth.getToken();
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return res.json() as Promise<T>;
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401) {
+    auth.removeToken();
+    window.location.href = '/admin/login';
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'API Request Failed');
+  }
+
+  return response.json();
 }
