@@ -17,10 +17,7 @@ export default function About({ content }: { content: ContentMap }) {
 
   // Fallback if no features or parsing failed
   if (features.length === 0) {
-    features = [
-      { title: "Sứ mệnh", description: "Đang cập nhật...", icon: "🚀" },
-      { title: "Tầm nhìn", description: "Đang cập nhật...", icon: "🔭" },
-    ]
+    // features = []
   }
 
   // If there's main text, we can show it above the features using a custom layout or just let feature section handle it
@@ -33,7 +30,7 @@ export default function About({ content }: { content: ContentMap }) {
       {/* Use FeatureSection directly to replace the old layout as requested */}
       {/* "Tại sao section về chúng tôi nó lại không thành 1 ô chữ nhật vậy" -> FeatureSection is the rectangle layout the user liked */}
       <FeatureSection
-        title={content.about_title || "Về chúng tôi"}
+        title={content.about_title || ""}
         subtitle="Giới thiệu chung"
         description={content.about_text || ""}
         features={features}

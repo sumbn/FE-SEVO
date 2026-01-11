@@ -17,7 +17,7 @@ export default async function Footer() {
               try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const contactInfo = content.contact_info ? JSON.parse(content.contact_info) : []
-                if (Array.isArray(contactInfo)) {
+                if (Array.isArray(contactInfo) && contactInfo.length > 0) {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   return contactInfo.map((item: any, idx: number) => (
                     <p key={idx}>{item.icon} {item.label}: {item.value}</p>
@@ -26,13 +26,8 @@ export default async function Footer() {
               } catch (e) {
                 console.error("Failed to parse contact_info", e)
               }
-              // Fallback
-              return (
-                <>
-                  <p>📞 Phone: {content.contact_phone || "..."}</p>
-                  <p>📧 Email: {content.contact_email || "..."}</p>
-                </>
-              )
+              // If empty, show nothing (clean state)
+              return null
             })()}
           </div>
         </div>

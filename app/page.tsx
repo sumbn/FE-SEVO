@@ -14,13 +14,9 @@ export default async function HomePage() {
     console.error("Failed to parse homepage_layout:", e)
   }
 
-  // Fallback if no layout defined
+  // Fallback if no layout defined -> Show nothing (User requested clean state)
   if (!layout.length) {
-    layout = [
-      { id: "hero", type: "Hero" },
-      { id: "about", type: "About" },
-      { id: "contact", type: "Contact" }
-    ]
+    // layout = [] 
   }
 
   return (
