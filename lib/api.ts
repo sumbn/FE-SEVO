@@ -9,7 +9,7 @@ type RequestOptions = RequestInit & {
 export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
   const token = auth.getToken();
   
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
