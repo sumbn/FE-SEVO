@@ -13,7 +13,7 @@ import { getContent } from "@/lib/content"
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getContent()
   return {
-    title: content.site_title || "Trung Tâm Giáo Dục Công Nghệ",
+    title: content.site_name || "Trung Tâm Giáo Dục Công Nghệ",
     description: content.site_description || "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo",
   }
 }

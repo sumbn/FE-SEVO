@@ -12,6 +12,7 @@ export default function ContentPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [content, setContent] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -39,6 +40,7 @@ export default function ContentPage() {
     if (!editingKey) return
 
     try {
+      setIsSaving(true)
       await apiFetch(`/content/${editingKey}`, {
         method: 'PUT',
         body: JSON.stringify({ value: editValue }),
@@ -50,6 +52,8 @@ export default function ContentPage() {
     } catch (err) {
       alert('Failed to save')
       console.error(err)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -111,9 +115,10 @@ export default function ContentPage() {
               </button>
               <button
                 onClick={handleSave}
-                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                disabled={isSaving}
+                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:bg-blue-400"
               >
-                Save
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
