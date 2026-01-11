@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
-
-type ContentItem = {
-  key: string
-  value: string
-}
+import { ListEditor } from '../components/ListEditor'
 
 export default function ContentPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,15 +93,43 @@ export default function ContentPage() {
 
       {/* Basic Modal */}
       {editingKey && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-lg rounded-lg bg-white p-6">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="mb-4 text-xl font-bold">Edit {editingKey}</h2>
-            <textarea
-              className="w-full rounded border p-3"
-              rows={5}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-            />
+
+            {/* Conditional Rendering: ListEditor vs Textarea */}
+            {(() => {
+              let isList = false
+              try {
+                const parsed = JSON.parse(editValue)
+                if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
+                  isList = true
+                }
+                // Also treat empty arrays as lists if we want to add items
+                if (Array.isArray(parsed) && parsed.length === 0) isList = true
+              } catch (e) {
+                isList = false
+              }
+
+              if (isList) {
+                return (
+                  <ListEditor
+                    value={editValue}
+                    onChange={setEditValue}
+                  />
+                )
+              }
+
+              return (
+                <textarea
+                  className="w-full rounded border p-3 font-mono text-sm"
+                  rows={8}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                />
+              )
+            })()}
+
             <div className="mt-4 flex justify-end space-x-3">
               <button
                 onClick={() => setEditingKey(null)}
