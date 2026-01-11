@@ -1,6 +1,6 @@
 import { ContentMap } from '@/types/content';
 
-const API_URL = 'http://localhost:3000/api/content';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/content`;
 
 export async function getContent(): Promise<ContentMap> {
   try {
