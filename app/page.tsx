@@ -3,6 +3,8 @@ import { SectionRenderer } from "@/components/SectionRenderer"
 
 export default async function HomePage() {
   const content = await getContent()
+  console.log("HomePage Content Keys:", Object.keys(content))
+  if (content.hero) console.log("Hero raw:", content.hero.substring(0, 50))
 
   // Parse layout configuration or use default
   let layout = []
