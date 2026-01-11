@@ -13,9 +13,27 @@ export default async function Footer() {
           </div>
           <div className="space-y-3 text-gray-400">
             <h4 className="text-lg font-semibold text-white mb-2">Liên hệ</h4>
-            <p>📞 Phone: {content.contact_phone}</p>
-            <p>📧 Email: {content.contact_email}</p>
-            <p>📍 Addr: {content.contact_address}</p>
+            {(() => {
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const contactInfo = content.contact_info ? JSON.parse(content.contact_info) : []
+                if (Array.isArray(contactInfo)) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  return contactInfo.map((item: any, idx: number) => (
+                    <p key={idx}>{item.icon} {item.label}: {item.value}</p>
+                  ))
+                }
+              } catch (e) {
+                console.error("Failed to parse contact_info", e)
+              }
+              // Fallback
+              return (
+                <>
+                  <p>📞 Phone: {content.contact_phone || "..."}</p>
+                  <p>📧 Email: {content.contact_email || "..."}</p>
+                </>
+              )
+            })()}
           </div>
         </div>
         <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
