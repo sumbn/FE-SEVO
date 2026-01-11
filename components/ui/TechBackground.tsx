@@ -7,7 +7,7 @@ import { useState, useRef } from 'react'
 import * as random from 'maath/random'
 
 function ParticleField(props: any) {
-  const ref = useRef<any>()
+  const ref = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sphere] = useState(() => {
     // Allocate buffer for 5000 points * 3 coordinates (x, y, z)
