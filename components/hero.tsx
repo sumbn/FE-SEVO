@@ -51,33 +51,47 @@ export default function Hero({ content }: { content: ContentMap }) {
   }
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col justify-center px-4 overflow-hidden pt-20">
+    <section className="relative min-h-[100vh] md:min-h-[90vh] flex flex-col justify-center px-6 md:px-4 overflow-hidden pt-16 md:pt-20">
 
-      <div className="container mx-auto max-w-7xl relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+      <div className="container mx-auto max-w-7xl relative z-10 grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
         {/* Left Column: Text Content */}
-        <div className="space-y-8 text-center lg:text-left">
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] whitespace-pre-wrap leading-tight">
-            {heroContent.title.split('\n').map((line, i) => (
-              <span key={i} className="block">
-                {line.split(' ').map((word, w) => (
-                  (i === 0 && w >= 2) || (i === 1 && w <= 1) ? // Highlight specific words logic (heuristic)
-                    <span key={w} className="text-neon-gradient px-1">{word} </span> :
-                    <span key={w}>{word} </span>
-                ))}
-              </span>
-            ))}
+        <div className="space-y-6 md:space-y-8 text-left">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] whitespace-pre-wrap leading-tight">
+            {heroContent.title.split('\n').map((line, i) => {
+              const words = line.split(' ')
+
+              // Determine which words should be gradient
+              // Line 0: words from index 2 onwards (kỹ năng số)
+              // Line 1: words from index 0 to 1 (Bứt phá)
+              const gradientStartIdx = i === 0 ? 2 : 0
+              const gradientEndIdx = i === 0 ? words.length : 2
+
+              const beforeGradient = words.slice(0, gradientStartIdx)
+              const gradientWords = words.slice(gradientStartIdx, gradientEndIdx)
+              const afterGradient = words.slice(gradientEndIdx)
+
+              return (
+                <span key={i} className="block">
+                  {beforeGradient.length > 0 && <span>{beforeGradient.join(' ')} </span>}
+                  {gradientWords.length > 0 && (
+                    <span className="text-neon-gradient">{gradientWords.join(' ')}</span>
+                  )}
+                  {afterGradient.length > 0 && <span> {afterGradient.join(' ')}</span>}
+                </span>
+              )
+            })}
           </h1>
 
-          <p className="text-lg md:text-xl text-blue-100/90 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-light tracking-wide">
+          <p className="text-base md:text-lg lg:text-xl text-blue-100/90 max-w-2xl leading-relaxed font-light tracking-wide">
             {heroContent.subtitle}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start pt-4">
+          <div className="flex flex-col gap-4 md:flex-row md:gap-5 pt-2 md:pt-4">
             {heroContent.ctas.map((cta: any, idx: number) => (
               <a
                 key={idx}
                 href={cta.link || "#"}
-                className={`relative group px-8 py-4 text-base rounded-full font-bold transition-all duration-300 overflow-hidden ${cta.variant === 'outline'
+                className={`relative group px-6 md:px-8 py-3.5 md:py-4 text-sm md:text-base rounded-full font-bold transition-all duration-300 overflow-hidden text-center ${cta.variant === 'outline'
                   ? 'glass-panel text-white hover:bg-white/10 hover:border-white/40'
                   : 'bg-gradient-to-r from-[var(--color-neon-purple)] to-[var(--color-neon-pink)] text-white shadow-[0_0_20px_rgba(188,19,254,0.5)] hover:shadow-[0_0_30px_rgba(188,19,254,0.7)] hover:scale-105'
                   }`}
@@ -89,7 +103,7 @@ export default function Hero({ content }: { content: ContentMap }) {
 
           {/* Trust Bar (Desktop placement) */}
           {heroContent.showTrustBar && (
-            <div className="pt-8 border-t border-white/10 mt-8 hidden lg:block">
+            <div className="pt-6 md:pt-8 border-t border-white/10 mt-6 md:mt-8 hidden lg:block">
               <p className="text-sm text-blue-200/60 mb-3 uppercase tracking-wider font-semibold">{heroContent.trustBarText}</p>
               <div className="flex gap-6 opacity-70 grayscale hover:grayscale-0 transition-all duration-500 items-center">
                 {heroContent.trustBarLogos && heroContent.trustBarLogos.length > 0 ? (
@@ -116,9 +130,9 @@ export default function Hero({ content }: { content: ContentMap }) {
 
         {/* Right Column: Visual Collage */}
         {heroContent.showVisual && (
-          <div className="relative hidden lg:block perspective-1000">
+          <div className="relative block lg:block perspective-1000 mt-8 lg:mt-0">
             {/* Main Image with 3D tilt effect */}
-            <div className="relative z-10 transform rotate-y-[-12deg] rotate-x-[5deg] hover:rotate-0 transition-transform duration-700 ease-out preserve-3d">
+            <div className="relative z-10 transform lg:rotate-y-[-12deg] lg:rotate-x-[5deg] hover:rotate-0 transition-transform duration-700 ease-out preserve-3d">
               <div className="rounded-3xl overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(0,243,255,0.2)] bg-black/50 backdrop-blur-xl">
                 {/* Using the generated hero collage placeholder */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
