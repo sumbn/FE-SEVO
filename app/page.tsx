@@ -1,5 +1,6 @@
 import { getContent } from "@/lib/content"
 import { SectionRenderer } from "@/components/SectionRenderer"
+import { ClientBackground3D } from "@/components/ui/ClientBackground3D"
 
 export default async function HomePage() {
   const content = await getContent()
@@ -22,15 +23,22 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="flex flex-col">
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {layout.map((section: any) => (
-        <SectionRenderer
-          key={section.id}
-          section={section}
-          content={content}
-        />
-      ))}
-    </main>
+    <>
+      {/* Full-page 3D Background */}
+      <ClientBackground3D />
+
+      {/* Content Layer */}
+      <main className="relative z-10 flex flex-col">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {layout.map((section: any, index: number) => (
+          <SectionRenderer
+            key={section.id}
+            section={section}
+            content={content}
+            sectionIndex={index}
+          />
+        ))}
+      </main>
+    </>
   )
 }

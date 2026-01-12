@@ -33,3 +33,43 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 3D Transform Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Rotation utilities for 3D cards */
+.rotate-x-6 {
+  --tw-rotate-x: 6deg;
+  transform: rotateX(var(--tw-rotate-x));
+}
+
+.-rotate-x-6 {
+  --tw-rotate-x: -6deg;
+  transform: rotateX(var(--tw-rotate-x));
+}
+
+.rotate-y-12 {
+  --tw-rotate-y: 12deg;
+  transform: rotateY(var(--tw-rotate-y));
+}
+
+.-rotate-y-12 {
+  --tw-rotate-y: -12deg;
+  transform: rotateY(var(--tw-rotate-y));
+}
+
+/* Reduced Motion Support - Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .card-3d,
+  .preserve-3d {
+    animation: none !important;
+    transition: opacity 0.3s ease !important;
+    transform: none !important;
+  }
+}
