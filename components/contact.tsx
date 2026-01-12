@@ -58,34 +58,34 @@ export default function Contact({ content }: { content: any }) {
           </div>
 
           {/* Right side - Form */}
-          <form onSubmit={handleSubmit} className="bg-white/95 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/50">
-            <h3 className="text-xl font-bold mb-6 text-center text-gray-800">Form Đăng Ký</h3>
+          <form onSubmit={handleSubmit} className="bg-black/20 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/10">
+            <h3 className="text-xl font-bold mb-6 text-center text-white">Form Đăng Ký</h3>
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Họ tên phụ huynh *</label>
+                <label className="block text-sm font-medium mb-2 text-blue-100">Họ tên phụ huynh *</label>
                 <input
                   required
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/90 transition-all"
+                  className="w-full border border-white/20 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/5 text-white placeholder-white/30 transition-all hover:bg-white/10"
                   placeholder="Nhập họ tên"
                   value={formData.parentName}
                   onChange={e => setFormData({ ...formData, parentName: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Số điện thoại *</label>
+                <label className="block text-sm font-medium mb-2 text-blue-100">Số điện thoại *</label>
                 <input
                   required
                   type="tel"
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/90 transition-all"
+                  className="w-full border border-white/20 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/5 text-white placeholder-white/30 transition-all hover:bg-white/10"
                   placeholder="0xxx xxx xxx"
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">Tên học viên (Tuổi)</label>
+                <label className="block text-sm font-medium mb-2 text-blue-100">Tên học viên (Tuổi)</label>
                 <input
-                  className="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/90 transition-all"
+                  className="w-full border border-white/20 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white/5 text-white placeholder-white/30 transition-all hover:bg-white/10"
                   placeholder="Ví dụ: Bé Bi (8 tuổi)"
                   value={formData.studentName}
                   onChange={e => setFormData({ ...formData, studentName: e.target.value })}
@@ -93,12 +93,12 @@ export default function Contact({ content }: { content: any }) {
               </div>
               <button
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-blue-500/25 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-[var(--color-neon-purple)] to-[var(--color-neon-pink)] text-white font-bold py-4 rounded-xl hover:shadow-[0_0_20px_rgba(188,19,254,0.5)] transition-all shadow-lg hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed border border-white/10"
               >
                 {loading ? 'Đang gửi...' : 'Gửi đăng ký ngay'}
               </button>
               {message && (
-                <p className={`text-center text-sm font-medium ${message.includes('thành công') ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-center text-sm font-medium ${message.includes('thành công') ? 'text-green-400' : 'text-red-400'}`}>
                   {message}
                 </p>
               )}

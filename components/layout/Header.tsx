@@ -3,7 +3,17 @@ import { getContent } from "@/lib/content"
 
 export default async function Header() {
   const content = await getContent()
-  const logoText = content.logo_text || "Tech Center"
+
+  let globalData = { logo_text: "Tech Center" }
+  try {
+    if (content.global) {
+      globalData = typeof content.global === 'string' ? JSON.parse(content.global) : content.global
+    }
+  } catch (e) {
+    console.error("Failed to parse global content in Header", e)
+  }
+
+  const logoText = globalData.logo_text || "Tech Center"
 
   return (
     <header className="bg-white shadow-sm">

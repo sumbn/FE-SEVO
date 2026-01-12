@@ -10,6 +10,7 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [editingType, setEditingType] = useState<string>('text')
   const [editValue, setEditValue] = useState('')
 
   useEffect(() => {
@@ -27,11 +28,18 @@ export default function ContentPage() {
     }
   }
 
-  const handleEdit = (key: string, value: any) => {
+  const handleEdit = (key: string, value: any, type: string = 'text') => {
     // If value is an object (array/dict), stringify it for the editor
-    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value || '')
+    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value === undefined || value === null ? '' : value)
     setEditingKey(key)
-    setEditValue(stringValue)
+    setEditingType(type)
+
+    // For boolean, if empty, default to 'false' string for editor state
+    if (type === 'boolean' && stringValue === '') {
+      setEditValue('false')
+    } else {
+      setEditValue(stringValue)
+    }
   }
 
   const handleSave = async () => {
@@ -80,7 +88,14 @@ export default function ContentPage() {
           }
         } catch { }
 
-        rootObj[subKey] = newValue
+        // Convert string booleans to actual booleans
+        if (newValue === 'true') {
+          rootObj[subKey] = true
+        } else if (newValue === 'false') {
+          rootObj[subKey] = false
+        } else {
+          rootObj[subKey] = newValue
+        }
         finalValueToSave = JSON.stringify(rootObj)
       }
       // 3. If it's a root key (like homepage_layout), just save the string.
@@ -104,6 +119,65 @@ export default function ContentPage() {
       console.error(err)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Quick toggle handler for boolean fields (direct save)
+  const handleQuickToggle = async (key: string, currentValue: any) => {
+    try {
+      // Determine new value
+      const isTrue = currentValue === true || currentValue === 'true'
+      const newValue = isTrue ? 'false' : 'true' // Toggle
+
+      // Same saving logic as handleSave but for a specific single-value update
+      let rootKey = key
+      let subKey = null
+
+      if (key.includes('.')) {
+        const parts = key.split('.')
+        rootKey = parts[0]
+        subKey = parts[1]
+      }
+
+      // 1. Get current Root Object
+      let currentRootValue = content[rootKey]
+      let rootObj: any = {}
+      try {
+        rootObj = JSON.parse(currentRootValue)
+      } catch {
+        rootObj = currentRootValue
+      }
+
+      let finalValueToSave = newValue
+
+      // 2. If it's a nested update
+      if (subKey) {
+        // Convert string booleans to actual booleans
+        if (newValue === 'true') {
+          rootObj[subKey] = true
+        } else if (newValue === 'false') {
+          rootObj[subKey] = false
+        } else {
+          rootObj[subKey] = newValue
+        }
+        finalValueToSave = JSON.stringify(rootObj)
+      }
+
+      // 3. Update API
+      await apiFetch(`/content/${rootKey}`, {
+        method: 'PUT',
+        body: JSON.stringify({ value: finalValueToSave }),
+      })
+
+      // 4. Update Local State
+      setContent(prev => ({
+        ...prev,
+        [rootKey]: finalValueToSave
+      }))
+
+    } catch (err) {
+      console.error("Quick toggle failed", err)
+      alert("Failed to update status")
     }
   }
 
@@ -133,7 +207,87 @@ export default function ContentPage() {
     </div>
   )
 
-  const FieldRow = ({ label, rootKey, fieldKey, type = 'text' }: { label: string, rootKey: string, fieldKey?: string, type?: 'text' | 'list' | 'json' }) => {
+  const GroupedFeatureCard = ({
+    title,
+    rootKey,
+    toggleKey,
+    fields
+  }: {
+    title: string,
+    rootKey: string,
+    toggleKey: string,
+    fields: { key: string, label: string, type?: 'text' | 'list' | 'json' }[]
+  }) => {
+    // 1. Get Root Data
+    let rootData: any = {}
+    try {
+      const rootStr = content[rootKey]
+      rootData = typeof rootStr === 'string' ? JSON.parse(rootStr) : rootStr || {}
+    } catch (e) { }
+
+    const isEnabled = rootData[toggleKey] === true || rootData[toggleKey] === 'true'
+    const fullToggleKey = `${rootKey}.${toggleKey}`
+
+    return (
+      <div className="flex flex-col p-4 border border-gray-200 rounded-lg bg-gray-50/50 h-full relative group hover:border-blue-400 transition-all">
+        {/* Header: Title + Toggle */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <p className="font-semibold text-gray-700 text-sm mb-1">{title}</p>
+            <p className={`text-xs font-bold ${isEnabled ? 'text-green-600' : 'text-gray-400'}`}>
+              {isEnabled ? 'ACTIVE' : 'INACTIVE'}
+            </p>
+          </div>
+
+          <div className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isEnabled}
+                onChange={() => handleQuickToggle(fullToggleKey, rootData[toggleKey])}
+              />
+              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
+        {/* Fields List */}
+        <div className="mt-auto space-y-3 pt-3 border-t border-gray-200">
+          {fields.map((f, idx) => {
+            const val = rootData[f.key]
+            let preview = String(val || '')
+            if (typeof val === 'object') {
+              preview = Array.isArray(val) ? `${val.length} items` : 'Object'
+              if (Array.isArray(val) && val.length === 0) preview = '(Empty)'
+            }
+            if (!val) preview = '(Empty)'
+
+            const fullFieldKey = `${rootKey}.${f.key}`
+
+            return (
+              <div key={idx} className="flex flex-col gap-1">
+                <p className="text-xs font-semibold text-gray-500">{f.label}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs text-gray-600 font-medium truncate flex-1 bg-white px-2 py-1 rounded border border-gray-100 h-[26px]">
+                    {preview}
+                  </div>
+                  <button
+                    onClick={() => handleEdit(fullFieldKey, val, f.type)}
+                    className="shrink-0 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors h-[26px] flex items-center"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  const FieldRow = ({ label, rootKey, fieldKey, type = 'text' }: { label: string, rootKey: string, fieldKey?: string, type?: 'text' | 'list' | 'json' | 'boolean' }) => {
     // Access value
     let value: any = ''
     try {
@@ -157,14 +311,54 @@ export default function ContentPage() {
       if (Array.isArray(value) && value.length === 0) preview = '(Empty List)'
     }
 
+    // Boolean specific preview
+    if (type === 'boolean') {
+      // Treat undefined/null/empty as false (default)
+      const isTrue = value === true || value === 'true'
+      preview = isTrue ? '✅ Enabled' : '❌ Disabled'
+    }
+
     // Legacy string fallback for preview
     if (type === 'json' && typeof value === 'string') {
       preview = 'JSON String'
     }
 
-    if (isEmpty) preview = '(Empty)'
+    // Only show (Empty) if it's NOT a boolean type
+    if (isEmpty && type !== 'boolean') preview = '(Empty)'
 
     const fullKey = fieldKey ? `${rootKey}.${fieldKey}` : rootKey
+
+    // --- RENDER FOR BOOLEAN (TOGGLE CARD) ---
+    if (type === 'boolean') {
+      const isTrue = value === true || value === 'true'
+
+      return (
+        <div className="flex flex-col justify-between p-4 border border-gray-200 rounded-lg bg-gray-50/50 h-full relative">
+          <div className="flex justify-between items-start">
+            <p className="font-semibold text-gray-700 text-sm mb-1 pr-8">{label}</p>
+            {/* Toggle Switch Top Right */}
+            <div className="absolute top-4 right-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={isTrue}
+                  onChange={() => handleQuickToggle(fullKey, value)}
+                />
+                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+
+          {/* Status Text (Optional, keeping it simple) */}
+          <div className="mt-auto pt-2">
+            <p className={`text-xs font-bold ${isTrue ? 'text-green-600' : 'text-gray-400'}`}>
+              {isTrue ? 'ACTIVE' : 'INACTIVE'}
+            </p>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="flex flex-col justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all bg-gray-50/50 group h-full">
@@ -177,7 +371,7 @@ export default function ContentPage() {
             {preview}
           </div>
           <button
-            onClick={() => handleEdit(fullKey, value)}
+            onClick={() => handleEdit(fullKey, value, type)}
             className="shrink-0 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
           >
             Edit
@@ -211,6 +405,17 @@ export default function ContentPage() {
               <FieldRow label="Title" rootKey="hero" fieldKey="title" />
               <FieldRow label="Subtitle" rootKey="hero" fieldKey="subtitle" />
               <FieldRow label="Call to Action Buttons" rootKey="hero" fieldKey="ctas" type="list" />
+              <GroupedFeatureCard
+                title="Trust Bar Configuration"
+                rootKey="hero"
+                toggleKey="showTrustBar"
+                fields={[
+                  { key: 'trustBarText', label: 'Bar Text', type: 'text' },
+                  { key: 'trustBarLogos', label: 'Partner Logos', type: 'list' }
+                ]}
+              />
+
+              <FieldRow label="Show Visual (Collage)" rootKey="hero" fieldKey="showVisual" type="boolean" />
             </SectionCard>
           )
         }
@@ -239,11 +444,31 @@ export default function ContentPage() {
       {editingKey && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all">
-            <h2 className="mb-1 text-xl font-bold text-gray-900">Edit {editingKey}</h2>
+            <h2 className="mb-1 text-xl font-bold text-gray-800">Edit {editingKey}</h2>
             <p className="mb-4 text-sm text-gray-500">Make changes to the content below.</p>
 
-            {/* Conditional Rendering: ListEditor vs Textarea */}
+            {/* Conditional Rendering: ListEditor vs Textarea vs Boolean */}
             {(() => {
+              // Use explicit type passed from FieldRow
+              if (editingType === 'boolean') {
+                return (
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={editValue === 'true'}
+                        onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">
+                        {editValue === 'true' ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </label>
+                  </div>
+                )
+              }
+
               let isList = false
               try {
                 const parsed = JSON.parse(editValue)

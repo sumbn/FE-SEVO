@@ -12,9 +12,19 @@ import { getContent } from "@/lib/content"
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getContent()
+
+  let globalData = { site_name: "Trung Tâm Giáo Dục Công Nghệ", site_description: "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo" }
+  try {
+    if (content.global) {
+      globalData = typeof content.global === 'string' ? JSON.parse(content.global) : content.global
+    }
+  } catch (e) {
+    console.error("Failed to parse global content in RootLayout", e)
+  }
+
   return {
-    title: content.site_name || "Trung Tâm Giáo Dục Công Nghệ",
-    description: content.site_description || "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo",
+    title: globalData.site_name || "Trung Tâm Giáo Dục Công Nghệ",
+    description: globalData.site_description || "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo",
   }
 }
 
@@ -25,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <Header />
         <main>{children}</main>
         <Footer />
