@@ -10,9 +10,18 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
   const token = auth.getToken();
   
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  // Only set application/json if not FormData and not explicitly overriden
+  if (!(options.body instanceof FormData) && options.headers?.['Content-Type'] !== 'undefined') {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
+
+  // Remove the marker if present
+  if (headers['Content-Type'] === 'undefined') {
+    delete headers['Content-Type'];
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;

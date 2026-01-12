@@ -14,12 +14,14 @@ export default function ContentPage() {
   const [editValue, setEditValue] = useState('')
 
   useEffect(() => {
-    fetchContent()
+    loadContent()
   }, [])
 
-  const fetchContent = async () => {
+  const loadContent = async () => {
     try {
       const data = await apiFetch('/content')
+      // DEBUG LOG
+      console.log('[ContentPage] Loaded content:', data)
       setContent(data)
     } catch (err) {
       console.error(err)
@@ -40,6 +42,21 @@ export default function ContentPage() {
     } else {
       setEditValue(stringValue)
     }
+  }
+
+  const getNestedValue = (obj: any, path: string) => {
+    return path.split('.').reduce((acc, part) => {
+      if (acc && typeof acc === 'string') {
+        try {
+          // Attempt to parse if it's a string (e.g. hero might be stringified)
+          const parsed = JSON.parse(acc)
+          return parsed[part]
+        } catch {
+          return undefined
+        }
+      }
+      return acc && acc[part]
+    }, obj)
   }
 
   const handleSave = async () => {
@@ -442,7 +459,7 @@ export default function ContentPage() {
 
       {/* Basic Modal (Kept same logic) */}
       {editingKey && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all">
             <h2 className="mb-1 text-xl font-bold text-gray-800">Edit {editingKey}</h2>
             <p className="mb-4 text-sm text-gray-500">Make changes to the content below.</p>
@@ -469,19 +486,23 @@ export default function ContentPage() {
                 )
               }
 
-              let isList = false
-              try {
-                const parsed = JSON.parse(editValue)
-                if (Array.isArray(parsed)) isList = true
-              } catch (e) {
-                isList = false
-              }
+              if (editingType === 'list') {
+                const itemTemplates: Record<string, any> = {
+                  'hero.trustBarLogos': { alt: '', src: '' },
+                  'hero.ctas': { label: '', href: '', primary: true },
+                  'global.contact_info': { label: '', value: '', icon: '' },
+                  'about.features': { title: '', description: '', icon: '' }
+                }
 
-              if (isList) {
+                // Determine folder based on root key (e.g. "hero" -> "hero", "about.features" -> "about")
+                const folder = editingKey.split('.')[0] || 'others'
+
                 return (
                   <ListEditor
                     value={editValue}
                     onChange={setEditValue}
+                    template={itemTemplates[editingKey]}
+                    folder={folder}
                   />
                 )
               }
