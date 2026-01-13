@@ -4,7 +4,7 @@ import { getContent } from "@/lib/content"
 export default async function Header() {
   const content = await getContent()
 
-  let globalData = { logo_text: "Tech Center" }
+  let globalData: { logo_text?: string; logo?: { text?: string; src?: string } } = { logo_text: "Tech Center" }
   try {
     if (content.global) {
       globalData = typeof content.global === 'string' ? JSON.parse(content.global) : content.global
@@ -13,7 +13,7 @@ export default async function Header() {
     console.error("Failed to parse global content in Header", e)
   }
 
-  const logoText = globalData.logo?.text || (typeof globalData.logo_text === 'string' ? globalData.logo_text : "Tech Center")
+  const logoText = globalData.logo?.text || globalData.logo_text || "Tech Center"
   const logoImage = globalData.logo?.src
 
   return (
