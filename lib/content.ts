@@ -13,7 +13,8 @@ export async function getContent(): Promise<ContentMap> {
       return {};
     }
 
-    return res.json();
+    const result = await res.json();
+    return result.data || {};
   } catch (error) {
     console.error('Fetch content failed:', error);
     return {};

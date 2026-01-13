@@ -1,19 +1,15 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import Header from "@/components/layout/Header"
-import Footer from "@/components/layout/Footer"
+import { getContent } from "@/lib/content"
 
 export const dynamic = "force-dynamic"
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] })
 
-import { getContent } from "@/lib/content"
-
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getContent()
-
-  let globalData = { site_name: "Trung Tâm Giáo Dục Công Nghệ", site_description: "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo" }
+  let globalData = { site_name: "SEVO Education", site_description: "Learning digital skills for the future" }
   try {
     if (content.global) {
       globalData = typeof content.global === 'string' ? JSON.parse(content.global) : content.global
@@ -21,12 +17,13 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch (e) {
     console.error("Failed to parse global content in RootLayout", e)
   }
-
   return {
-    title: globalData.site_name || "Trung Tâm Giáo Dục Công Nghệ",
-    description: globalData.site_description || "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo",
+    title: globalData.site_name || "SEVO Education",
+    description: globalData.site_description || "Learning digital skills for the future",
   }
 }
+
+import { AuthProvider } from "@/components/providers/AuthProvider"
 
 export default function RootLayout({
   children,
@@ -35,10 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+      <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

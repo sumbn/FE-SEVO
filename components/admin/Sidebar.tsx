@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { clearAccessToken } from '@/lib/api'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin' },
@@ -18,8 +19,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
-  const handleLogout = () => {
-    auth.removeToken()
+  const handleLogout = async () => {
+    // Call backend logout to clear httpOnly cookie
+    await auth.logout()
+    // Clear access token from memory
+    clearAccessToken()
+    // Redirect to login
     router.push('/admin/login')
   }
 
@@ -50,8 +55,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={() => onClose()} // Close sidebar on mobile nav
                   className={`block rounded-lg px-4 py-2 text-sm font-medium transition-colors ${pathname === item.href
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                     }`}
                 >
                   {item.label}

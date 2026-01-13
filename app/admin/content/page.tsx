@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { ListEditor } from '../components/ListEditor'
 
+const ITEM_TEMPLATES: Record<string, any> = {
+  'hero.trustBarLogos': { alt: '', src: '' },
+  'hero.ctas': { label: '', href: '', primary: true },
+  'global.contact_info': { label: '', value: '', icon: '' },
+  'about.features': { title: '', description: '', icon: '' },
+  'global.logo': { text: '', src: '' }
+}
+
 export default function ContentPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [content, setContent] = useState<Record<string, any>>({})
@@ -12,6 +20,8 @@ export default function ContentPage() {
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [editingType, setEditingType] = useState<string>('text')
   const [editValue, setEditValue] = useState('')
+  // Track images that need to be deleted from Cloudinary
+  const [pendingDeletes, setPendingDeletes] = useState<string[]>([])
 
   useEffect(() => {
     loadContent()
@@ -31,8 +41,28 @@ export default function ContentPage() {
   }
 
   const handleEdit = (key: string, value: any, type: string = 'text') => {
+    // 1. If value is missing, check template
+    let finalValue = value
+    if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
+      if (ITEM_TEMPLATES[key]) {
+        finalValue = ITEM_TEMPLATES[key]
+      }
+    }
+
+    // 2. Specialized Transition: global.logo missing but logo_text exists
+    if (key === 'global.logo' && (!finalValue || !finalValue.text)) {
+      try {
+        const globalData = content['global']
+        const parsed = typeof globalData === 'string' ? JSON.parse(globalData) : globalData
+        if (parsed?.logo_text) {
+          finalValue = { text: parsed.logo_text, src: '' }
+        }
+      } catch (e) { }
+    }
+
     // If value is an object (array/dict), stringify it for the editor
-    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value === undefined || value === null ? '' : value)
+    const stringValue = typeof finalValue === 'object' ? JSON.stringify(finalValue) : String(finalValue === undefined || finalValue === null ? '' : finalValue)
+
     setEditingKey(key)
     setEditingType(type)
 
@@ -46,16 +76,8 @@ export default function ContentPage() {
 
   const getNestedValue = (obj: any, path: string) => {
     return path.split('.').reduce((acc, part) => {
-      if (acc && typeof acc === 'string') {
-        try {
-          // Attempt to parse if it's a string (e.g. hero might be stringified)
-          const parsed = JSON.parse(acc)
-          return parsed[part]
-        } catch {
-          return undefined
-        }
-      }
-      return acc && acc[part]
+      const current = (acc && typeof acc === 'string') ? JSON.parse(acc) : acc
+      return current && current[part]
     }, obj)
   }
 
@@ -64,6 +86,22 @@ export default function ContentPage() {
 
     try {
       setIsSaving(true)
+
+      // STEP 1: Delete orphaned images from Cloudinary
+      if (pendingDeletes.length > 0) {
+        console.log('[ContentPage] Deleting orphaned images:', pendingDeletes)
+        for (const key of pendingDeletes) {
+          try {
+            await apiFetch('/uploads', {
+              method: 'DELETE',
+              body: JSON.stringify({ key })
+            })
+            console.log(`[ContentPage] Deleted orphaned file: ${key}`)
+          } catch (err) {
+            console.error(`[ContentPage] Failed to delete orphaned file: ${key}`, err)
+          }
+        }
+      }
 
       // Determine if we are editing a nested key (e.g. "hero.title") or a root key ("homepage_layout")
       // Actually, all our new keys are nested in root objects (hero, about, global)
@@ -78,29 +116,27 @@ export default function ContentPage() {
         subKey = parts[1]
       }
 
-      // 1. Get current Root Object
-      // Content API returns strings for values.
-      let currentRootValue = content[rootKey]
-      // If it looks like JSON, parse it.
-      let rootObj: any = {}
-      try {
-        rootObj = JSON.parse(currentRootValue)
-      } catch {
-        rootObj = currentRootValue // Fallback if it's not JSON (unlikely for hero/about)
+      // 2. Get current Root Object
+      let rootObj = content[rootKey] || {}
+      if (typeof rootObj === 'string') {
+        try {
+          rootObj = JSON.parse(rootObj)
+        } catch {
+          rootObj = {}
+        }
       }
 
-      let finalValueToSave = editValue
+      let finalValueToSave: any = editValue
 
-      // 2. If it's a nested update, modify the object
+      // 3. If it's a nested update, modify the object
       if (subKey) {
-        // We need to know if the value being saved should be treated as string or JSON (array/obj)
-        // Heuristic: If it parses as Array/Object, use that.
-        // Or better: Checking specific keys isn't scalable.
-        // Let's rely on JSON.parse check.
         let newValue = editValue
         try {
           const parsed = JSON.parse(editValue)
-          if (typeof parsed === 'object' || Array.isArray(parsed)) {
+          // If we are editing an "object" type (e.g. logo), it might have been wrapped in an array by ListEditor
+          if (editingType === 'object' && Array.isArray(parsed)) {
+            newValue = parsed[0]
+          } else if (typeof parsed === 'object' || Array.isArray(parsed)) {
             newValue = parsed
           }
         } catch { }
@@ -113,14 +149,21 @@ export default function ContentPage() {
         } else {
           rootObj[subKey] = newValue
         }
-        finalValueToSave = JSON.stringify(rootObj)
+        finalValueToSave = rootObj
+      } else {
+        // Root key - try to parse as JSON if possible
+        try {
+          const parsed = JSON.parse(editValue)
+          if (typeof parsed === 'object' || Array.isArray(parsed)) {
+            finalValueToSave = parsed
+          }
+        } catch { }
       }
-      // 3. If it's a root key (like homepage_layout), just save the string.
-      // But wait, content[rootKey] is expected to be a string in DB.
 
       await apiFetch(`/content/${rootKey}`, {
         method: 'PUT',
         body: JSON.stringify({ value: finalValueToSave }),
+        requiresAuth: true,
       })
 
       // Update local state
@@ -130,6 +173,8 @@ export default function ContentPage() {
         [rootKey]: finalValueToSave
       }))
 
+      // Clear pending deletions after successful save
+      setPendingDeletes([])
       setEditingKey(null)
     } catch (err) {
       alert('Failed to save')
@@ -157,12 +202,13 @@ export default function ContentPage() {
       }
 
       // 1. Get current Root Object
-      let currentRootValue = content[rootKey]
-      let rootObj: any = {}
-      try {
-        rootObj = JSON.parse(currentRootValue)
-      } catch {
-        rootObj = currentRootValue
+      let rootObj = content[rootKey] || {}
+      if (typeof rootObj === 'string') {
+        try {
+          rootObj = JSON.parse(rootObj)
+        } catch {
+          rootObj = {}
+        }
       }
 
       let finalValueToSave = newValue
@@ -177,13 +223,22 @@ export default function ContentPage() {
         } else {
           rootObj[subKey] = newValue
         }
-        finalValueToSave = JSON.stringify(rootObj)
+        finalValueToSave = rootObj
+      } else {
+        // Root key - try to parse as JSON if possible
+        try {
+          const parsed = JSON.parse(newValue)
+          if (typeof parsed === 'object' || Array.isArray(parsed)) {
+            finalValueToSave = parsed
+          }
+        } catch { }
       }
 
       // 3. Update API
       await apiFetch(`/content/${rootKey}`, {
         method: 'PUT',
         body: JSON.stringify({ value: finalValueToSave }),
+        requiresAuth: true,
       })
 
       // 4. Update Local State
@@ -233,7 +288,7 @@ export default function ContentPage() {
     title: string,
     rootKey: string,
     toggleKey: string,
-    fields: { key: string, label: string, type?: 'text' | 'list' | 'json' }[]
+    fields: { key: string, label: string, type?: 'text' | 'list' | 'json' | 'object' }[]
   }) => {
     // 1. Get Root Data
     let rootData: any = {}
@@ -304,16 +359,17 @@ export default function ContentPage() {
     )
   }
 
-  const FieldRow = ({ label, rootKey, fieldKey, type = 'text' }: { label: string, rootKey: string, fieldKey?: string, type?: 'text' | 'list' | 'json' | 'boolean' }) => {
+  const FieldRow = ({ label, rootKey, fieldKey, type = 'text' }: { label: string, rootKey: string, fieldKey?: string, type?: 'text' | 'list' | 'json' | 'boolean' | 'object' }) => {
     // Access value
     let value: any = ''
     try {
-      const rootStr = content[rootKey]
+      const rootData = content[rootKey]
+      const rootObj = typeof rootData === 'string' ? JSON.parse(rootData) : rootData
+
       if (fieldKey) {
-        const rootObj = JSON.parse(rootStr)
-        value = rootObj[fieldKey]
+        value = rootObj ? rootObj[fieldKey] : undefined
       } else {
-        value = rootStr // direct access
+        value = rootObj // direct access
       }
     } catch (e) {
       // console.warn("Failed to read value for", rootKey, fieldKey)
@@ -407,8 +463,7 @@ export default function ContentPage() {
 
       {/* 1. GLOBAL SETTINGS */}
       <SectionCard title="Global Settings" description="General website configuration, logo, and contact info.">
-        <FieldRow label="Site Name" rootKey="global" fieldKey="site_name" />
-        <FieldRow label="Logo Text" rootKey="global" fieldKey="logo_text" />
+        <FieldRow label="Logo Config (Image & Text)" rootKey="global" fieldKey="logo" type="object" />
         <FieldRow label="Contact Information" rootKey="global" fieldKey="contact_info" type="list" />
       </SectionCard>
 
@@ -486,23 +541,34 @@ export default function ContentPage() {
                 )
               }
 
-              if (editingType === 'list') {
-                const itemTemplates: Record<string, any> = {
-                  'hero.trustBarLogos': { alt: '', src: '' },
-                  'hero.ctas': { label: '', href: '', primary: true },
-                  'global.contact_info': { label: '', value: '', icon: '' },
-                  'about.features': { title: '', description: '', icon: '' }
-                }
+              if (editingType === 'list' || editingType === 'object') {
+                const isObject = editingType === 'object'
+                // For object type, wrap in array [item] so ListEditor can handle it,
+                // and we'll unwrap in handleSave
+                const listValue = isObject ? (editValue ? JSON.stringify([JSON.parse(editValue)]) : '[]') : editValue
 
                 // Determine folder based on root key (e.g. "hero" -> "hero", "about.features" -> "about")
                 const folder = editingKey.split('.')[0] || 'others'
 
                 return (
                   <ListEditor
-                    value={editValue}
-                    onChange={setEditValue}
-                    template={itemTemplates[editingKey]}
+                    value={listValue}
+                    onChange={(newVal) => {
+                      if (isObject) {
+                        try {
+                          const parsed = JSON.parse(newVal)
+                          setEditValue(JSON.stringify(parsed[0] || {}))
+                        } catch (e) {
+                          setEditValue(newVal)
+                        }
+                      } else {
+                        setEditValue(newVal)
+                      }
+                    }}
+                    onPendingDeletes={(keys) => setPendingDeletes(keys)}
+                    template={ITEM_TEMPLATES[editingKey]}
                     folder={folder}
+                    maxItems={isObject ? 1 : undefined}
                   />
                 )
               }
@@ -519,7 +585,10 @@ export default function ContentPage() {
 
             <div className="mt-6 flex justify-end space-x-3">
               <button
-                onClick={() => setEditingKey(null)}
+                onClick={() => {
+                  setEditingKey(null)
+                  setPendingDeletes([]) // Clear pending deletions on cancel
+                }}
                 className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 font-medium"
               >
                 Cancel

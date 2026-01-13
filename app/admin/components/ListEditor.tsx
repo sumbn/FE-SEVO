@@ -8,17 +8,21 @@ interface ListEditorProps {
   onChange: (value: string) => void
   template?: Record<string, any>
   folder?: string // Cloudinary folder name
+  maxItems?: number
+  onPendingDeletes?: (keys: string[]) => void // Callback to notify parent of images to delete
 }
 
 interface ListItem {
   [key: string]: any
 }
 
-export function ListEditor({ value, onChange, template: customTemplate, folder = 'others' }: ListEditorProps) {
+export function ListEditor({ value, onChange, template: customTemplate, folder = 'others', maxItems, onPendingDeletes }: ListEditorProps) {
   // Internal state for immediate UI updates
   const [items, setItems] = useState<ListItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  // Track images that need to be deleted from storage when parent saves
+  const [deletedKeys, setDeletedKeys] = useState<string[]>([])
 
   // Sync internal state when prop value changes (e.g. initial load or parent reset)
   useEffect(() => {
@@ -48,6 +52,9 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
 
   // Buffered state for the item currently being edited
   const [editItem, setEditItem] = useState<ListItem | null>(null)
+  // Track original state BEFORE editing. 
+  // This is used to detect deleted images on Save or NEW images on Cancel.
+  const [originalEditItem, setOriginalEditItem] = useState<ListItem | null>(null)
 
   const updateParent = (newItems: ListItem[]) => {
     setItems(newItems)
@@ -95,25 +102,30 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
 
   const handleEdit = (index: number) => {
     setEditingIndex(index)
-    setEditItem({ ...items[index] })
+    const original = { ...items[index] }
+    setEditItem(original)
+    setOriginalEditItem(original)
   }
 
   const handleAdd = () => {
     const newItem = customTemplate || { title: '', description: '' }
     setEditingIndex(items.length)
     setEditItem(newItem)
+    setOriginalEditItem(null) // New item has no "original" images
   }
 
   const handleClose = () => {
     // If we cancel, we must clean up any NEW images uploaded during this session
     // that are NOT in the original item.
     if (editItem && editingIndex !== null) {
-      const originalItem = editingIndex < items.length ? items[editingIndex] : {}
+      // Use originalEditItem instead of items[editingIndex] because items might have been
+      // updated by "Live Editing" via updateParent.
+      const original = originalEditItem || {}
 
       Object.keys(editItem).forEach(key => {
         if (key.endsWith('_key')) {
           const newKey = editItem[key]
-          const oldKey = originalItem[key]
+          const oldKey = original[key]
           // If this key is new (not in original), delete it
           if (newKey && newKey !== oldKey) {
             handleDeleteFromStorage(newKey)
@@ -122,23 +134,34 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
       })
     }
 
+    // Clear pending deletions since we're canceling
+    setDeletedKeys([])
+    if (onPendingDeletes) {
+      onPendingDeletes([])
+    }
+
     setEditingIndex(null)
     setEditItem(null)
+    setOriginalEditItem(null)
   }
 
   const handleSaveItem = () => {
     if (editingIndex === null || !editItem) return
 
-    // On save, we check if we replaced any OLD images.
-    // If so, delete the OLD images.
-    if (editingIndex < items.length) {
-      const originalItem = items[editingIndex]
-      Object.keys(originalItem).forEach(key => {
+    // On save, we check if we replaced any OLD images or if images were CLEARED.
+    // Use originalEditItem for comparison.
+    if (originalEditItem) {
+      Object.keys(originalEditItem).forEach(key => {
         if (key.endsWith('_key')) {
-          const oldKey = originalItem[key]
+          const fieldName = key.replace('_key', '')
+          const oldKey = originalEditItem[key]
           const newKey = editItem[key]
-          // If we have a new key (or no key) and it differs from old, delete old
-          if (oldKey && oldKey !== newKey) {
+          const newUrl = editItem[fieldName]
+
+          // Delete if:
+          // 1. Key changed (image was replaced)
+          // 2. URL is empty but key still exists (image was cleared)
+          if (oldKey && (oldKey !== newKey || !newUrl)) {
             handleDeleteFromStorage(oldKey)
           }
         }
@@ -155,32 +178,44 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
 
     setEditingIndex(null)
     setEditItem(null)
+    setOriginalEditItem(null)
   }
 
   const handleFieldChange = (key: string, val: string | boolean | number) => {
     if (!editItem || editingIndex === null) return
 
-    setEditItem(prev => {
-      if (!prev) return null
-      const next = { ...prev, [key]: val }
+    // Check if this is clearing an image field
+    if (isImageField(key) && val === '' && editItem[key]) {
+      // User is clearing an existing image
+      const keyField = `${key}_key`
+      const oldKey = editItem[keyField]
 
-      // If clearing a value that had a key, remove the storage key
-      if (val === '') {
-        // Set to undefined instead of delete to ensure React picks up the change
-        next[`${key}_key`] = undefined as any
+      // If there's an old key, mark it for deletion
+      if (oldKey) {
+        setDeletedKeys(prev => {
+          const updated = [...prev, oldKey]
+          // Notify parent of pending deletions
+          if (onPendingDeletes) {
+            onPendingDeletes(updated)
+          }
+          return updated
+        })
       }
+    }
 
-      // Immediately sync to items array
-      const newItems = [...items]
-      if (editingIndex >= newItems.length) {
-        newItems.push(next)
-      } else {
-        newItems[editingIndex] = next
-      }
-      updateParent(newItems)
+    const next = { ...editItem, [key]: val }
 
-      return next
-    })
+    // Update local buffered state
+    setEditItem(next)
+
+    // Immediately sync to items array (Live Editing)
+    const newItems = [...items]
+    if (editingIndex >= newItems.length) {
+      newItems.push(next)
+    } else {
+      newItems[editingIndex] = next
+    }
+    updateParent(newItems)
   }
 
   const handleFileUpload = async (key: string, file: File) => {
@@ -189,15 +224,26 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
     try {
       setIsUploading(true)
 
-      // We do NOT delete old key immediately. we wait for Save.
-      // BUT if we already uploaded a NEW image in this session, we should delete THAT one.
+      // Track the old key for deletion
       const currentSessionKey = editItem[`${key}_key`]
-      const originalItem = editingIndex !== null && editingIndex < items.length ? items[editingIndex] : {}
-      const originalKey = originalItem[`${key}_key`]
+      const original = originalEditItem || {}
+      const originalKey = original[`${key}_key`]
 
-      // If the current key is NOT the original key, it means it's a temp upload. Delete it.
-      if (currentSessionKey && currentSessionKey !== originalKey) {
-        handleDeleteFromStorage(currentSessionKey)
+      // If replacing an existing image, mark old key for deletion
+      if (currentSessionKey) {
+        if (currentSessionKey !== originalKey) {
+          // Delete temp upload immediately
+          handleDeleteFromStorage(currentSessionKey)
+        } else if (originalKey) {
+          // Mark original image for deletion when parent saves
+          setDeletedKeys(prev => {
+            const updated = [...prev, originalKey]
+            if (onPendingDeletes) {
+              onPendingDeletes(updated)
+            }
+            return updated
+          })
+        }
       }
 
       const formData = new FormData()
@@ -211,11 +257,23 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
         } as any
       })
 
-      setEditItem(prev => ({
-        ...prev!,
+      const next = {
+        ...editItem!,
         [key]: response.url,
         [`${key}_key`]: response.key
-      }))
+      }
+      setEditItem(next)
+
+      // Immediately sync to items array (Live Editing)
+      const newItems = [...items]
+      if (editingIndex !== null) {
+        if (editingIndex >= newItems.length) {
+          newItems.push(next)
+        } else {
+          newItems[editingIndex] = next
+        }
+        updateParent(newItems)
+      }
 
     } catch (err) {
       alert('Upload failed')
@@ -228,8 +286,21 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
   // Detect if field name suggests it's an image
   const isImageField = (key: string) => {
     const lowerKey = key.toLowerCase()
-    return lowerKey === 'src' || lowerKey === 'logo' || lowerKey === 'url' || lowerKey === 'image' || lowerKey.includes('image') || lowerKey.includes('icon')
+    // Explicitly exclude 'icon' because we want to use string-based icons (lucide)
+    if (lowerKey === 'icon') return false
+    return lowerKey === 'src' || lowerKey === 'logo' || lowerKey === 'url' || lowerKey === 'image' || lowerKey.includes('image')
   }
+
+  // Define supported icons for the dropdown
+  const SUPPORTED_ICONS = [
+    { label: 'Mail', value: 'envelope' },
+    { label: 'Phone', value: 'phone' },
+    { label: 'Address', value: 'map-marker' },
+    { label: 'Facebook', value: 'facebook' },
+    { label: 'Instagram', value: 'instagram' },
+    { label: 'Link', value: 'link' },
+    { label: 'Globe', value: 'globe' },
+  ]
 
   if (error) {
     return <div className="text-red-500 text-sm p-2 bg-red-50 rounded">{error}</div>
@@ -253,24 +324,36 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
 
               return (
                 <div key={key} className="space-y-1">
-                  <label className="block text-sm font-semibold capitalize">{key}</label>
+                  <label className="block text-sm font-semibold capitalize text-gray-700">{key}</label>
 
                   {typeof val === 'boolean' ? (
-                    <label className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={val}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                         onChange={e => handleFieldChange(key, e.target.checked)}
                       />
-                      {String(val)}
+                      <span className="text-sm text-gray-600 font-medium">{val ? 'Enabled' : 'Disabled'}</span>
                     </label>
+                  ) : key.toLowerCase() === 'icon' ? (
+                    <select
+                      className="w-full border rounded-lg p-2.5 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all border-gray-300"
+                      value={val || ''}
+                      onChange={e => handleFieldChange(key, e.target.value)}
+                    >
+                      <option value="">-- Select Icon --</option>
+                      {SUPPORTED_ICONS.map(icon => (
+                        <option key={icon.value} value={icon.value}>{icon.label}</option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="space-y-2">
                       <input
-                        className="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={val}
+                        className="w-full border rounded-lg p-2.5 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all border-gray-300"
+                        value={val || ''}
                         onChange={e => handleFieldChange(key, e.target.value)}
-                        placeholder={isImg ? "Image URL or upload below..." : ""}
+                        placeholder={isImg ? "Image URL or upload below..." : `Enter ${key}...`}
                       />
                       {isImg && (
                         <div className="flex items-start gap-4 p-3 bg-white border rounded-lg shadow-sm">
@@ -368,13 +451,15 @@ export function ListEditor({ value, onChange, template: customTemplate, folder =
         )
       })}
 
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); handleAdd() }}
-        className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
-      >
-        + Add New Item
-      </button>
+      {(!maxItems || items.length < maxItems) && (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); handleAdd() }}
+          className="w-full py-2 border-2 border-dashed border-gray-300 rounded text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-colors"
+        >
+          + Add New Item
+        </button>
+      )}
     </div>
   )
 }
