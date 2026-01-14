@@ -1,16 +1,21 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import Link from "../ui/Link"
+import { usePathname } from "next/navigation"
 import { getContent } from "@/lib/content"
+import LanguageSwitcher from "../ui/LanguageSwitcher"
+import { useI18n, useTranslation } from "../providers/I18nProvider"
 
 export default function Header() {
+  const { locale } = useI18n()
+  const { t } = useTranslation()
   const [content, setContent] = useState<any>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
-    getContent().then(setContent)
-  }, [])
+    getContent(locale).then(setContent)
+  }, [locale])
 
   let globalData: {
     logo_text?: string
@@ -33,36 +38,39 @@ export default function Header() {
   // Default Menu if CMS is empty
   const defaultMenu = [
     {
-      label: "ĐÀO TẠO",
+      label: t('header.training'),
       type: "dropdown",
       items: [
-        { label: "Lập trình chuyên sâu", sublabel: "Từ Zero đến Hero", href: "/courses/dev", color: "neon-blue" },
-        { label: "Ngoại ngữ công nghệ", sublabel: "IELTS & Giao tiếp IT", href: "/courses/lang", color: "neon-pink" },
-        { label: "Lịch khai giảng", href: "/schedule", icon: "calendar" }
+        { label: t('header.advanced_programming'), sublabel: t('header.zero_to_hero'), href: "/courses/dev", color: "neon-blue" },
+        { label: t('header.tech_language'), sublabel: t('header.it_communication'), href: "/courses/lang", color: "neon-pink" },
+        { label: t('header.schedule'), href: "/schedule", icon: "calendar" }
       ]
     },
     {
-      label: "DỊCH VỤ PHẦN MỀM",
+      label: t('header.software_services'),
       type: "dropdown",
       items: [
-        { label: "Giải pháp Web/App", sublabel: "Custom Development", href: "/services/web-app" },
-        { label: "Chuyển đổi số", sublabel: "Automation & Cloud", href: "/services/digital-transformation" },
-        { label: "Tư vấn công nghệ", sublabel: "Architecture & Strategy", href: "/services/consulting" }
+        { label: t('header.web_app_solutions'), sublabel: t('header.custom_development'), href: "/services/web-app" },
+        { label: t('header.digital_transformation'), sublabel: t('header.automation_cloud'), href: "/services/digital-transformation" },
+        { label: t('header.tech_consulting'), sublabel: t('header.architecture_strategy'), href: "/services/consulting" }
       ]
     },
-    { label: "Về SEVO", href: "/about" },
-    { label: "Blog", href: "/blog" }
+    { label: t('header.about_sevo'), href: "/about" },
+    { label: t('header.blog'), href: "/blog" }
   ]
 
   const menuItems = globalData.nav_menu || defaultMenu
   const ctas = globalData.nav_ctas || [
-    { label: "Học viên", href: "/admin/login", variant: "glass", icon: "user" },
-    { label: "Tư vấn Dự án", href: "#contact", variant: "primary" }
+    { label: t('header.students'), href: "/admin/login", variant: "glass", icon: "user" },
+    { label: t('header.project_consulting'), href: "#contact", variant: "primary" }
   ]
 
   // Robust visibility filter: item.visible is either undefined (assumed ON) or true.
   // Explicitly hidden only if visible === false.
   const filterVisible = (items: any[]) => items.filter((item: any) => item.visible !== false)
+
+  // No need for custom getHref anymore as our Link component handles it
+  const getHref = (href: string) => href
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] bg-[#050b14]/80 backdrop-blur-2xl border-b border-white/5 shadow-2xl">
@@ -99,7 +107,7 @@ export default function Header() {
                         {subItems.map((sub: any, sIdx: number) => (
                           <Link
                             key={sIdx}
-                            href={sub.href || "#"}
+                            href={getHref(sub.href)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-all group/item ${sub.icon ? 'border-t border-white/5 mt-1' : ''}`}
                           >
                             {sub.color ? (
@@ -120,7 +128,7 @@ export default function Header() {
               }
               return (
                 <li key={idx}>
-                  <Link href={item.href || "#"} className="text-gray-300 hover:text-white font-semibold transition-colors text-xs uppercase tracking-widest">
+                  <Link href={getHref(item.href)} className="text-gray-300 hover:text-white font-semibold transition-colors text-xs uppercase tracking-widest">
                     {item.label}
                   </Link>
                 </li>
@@ -130,10 +138,14 @@ export default function Header() {
 
           {/* RIGHT: CTA/AUTH */}
           <div className="flex items-center space-x-3 md:space-x-4">
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
+
             {filterVisible(ctas).map((cta, idx) => (
               <Link
                 key={idx}
-                href={cta.href || "#"}
+                href={getHref(cta.href)}
                 className={`flex items-center gap-2 px-5 md:px-6 py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-[0.15em] transition-all border ${cta.variant === 'glass'
                   ? 'hidden sm:flex glass-panel text-gray-300 hover:text-white border-white/5 hover:border-white/20'
                   : 'relative group overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] hover:scale-105 active:scale-95 border-blue-400/30'
@@ -166,6 +178,9 @@ export default function Header() {
         {/* MOBILE MENU */}
         {isMenuOpen && (
           <div className="lg:hidden mt-4 pb-6 animate-in slide-in-from-top duration-300">
+            <div className="flex justify-end p-2 mb-4 border-b border-white/5">
+              <LanguageSwitcher />
+            </div>
             <ul className="space-y-4">
               {filterVisible(menuItems).map((item, idx) => (
                 <li key={idx} className="space-y-2">
@@ -175,7 +190,7 @@ export default function Header() {
                       {filterVisible(item.items).map((sub: any, sIdx: number) => (
                         <Link
                           key={sIdx}
-                          href={sub.href || "#"}
+                          href={getHref(sub.href)}
                           onClick={() => setIsMenuOpen(false)}
                           className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
                         >
@@ -188,7 +203,7 @@ export default function Header() {
                     </div>
                   ) : (
                     <Link
-                      href={item.href || "#"}
+                      href={getHref(item.href)}
                       onClick={() => setIsMenuOpen(false)}
                       className="block p-3 rounded-xl bg-white/5 border border-white/5 text-sm font-bold text-gray-300 hover:text-white"
                     >
@@ -204,3 +219,4 @@ export default function Header() {
     </header>
   )
 }
+

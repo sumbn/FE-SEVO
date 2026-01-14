@@ -2,9 +2,9 @@ import { ContentMap } from '@/types/content';
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/content`;
 
-export async function getContent(): Promise<ContentMap> {
+export async function getContent(locale: string = 'vi'): Promise<ContentMap> {
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(`${API_URL}?locale=${locale}`, {
       cache: 'no-store', // CMS → luôn lấy mới
     });
 
@@ -20,3 +20,4 @@ export async function getContent(): Promise<ContentMap> {
     return {};
   }
 }
+

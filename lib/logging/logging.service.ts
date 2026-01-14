@@ -137,6 +137,14 @@ class LoggingServiceClass implements ILogger {
       },
     };
     
+    // In Development: Log to console primarily
+    // We disable remote flushing by default in verify mode/dev to prevent HMR loops
+    if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_ENABLE_REMOTE_LOGS) {
+      this.logToConsole(entry);
+      // Do not buffer for remote flush
+      return;
+    }
+    
     this.logBuffer.push(entry);
     
     // Also log to console in development
@@ -169,9 +177,17 @@ class LoggingServiceClass implements ILogger {
   private startFlushTimer(): void {
     if (typeof window === 'undefined') return;
     
-    this.flushTimer = setInterval(() => {
-      this.flush();
-    }, this.FLUSH_INTERVAL);
+    // Clear existing timer if any (singleton safety)
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+    }
+    
+    // Only start timer if remote logging is potentially enabled
+    if (process.env.NODE_ENV !== 'development' || process.env.NEXT_PUBLIC_ENABLE_REMOTE_LOGS) {
+      this.flushTimer = setInterval(() => {
+        this.flush();
+      }, this.FLUSH_INTERVAL);
+    }
   }
   
   /**

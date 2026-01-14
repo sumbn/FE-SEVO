@@ -1,0 +1,68 @@
+{
+  "header": {
+    "training": "ĐÀO TẠO",
+    "advanced_programming": "Lập trình chuyên sâu",
+    "zero_to_hero": "Từ con số 0 đến chuyên gia",
+    "tech_language": "Ngoại ngữ công nghệ",
+    "it_communication": "Giao tiếp trong IT",
+    "schedule": "Lịch khai giảng",
+    "software_services": "DỊCH VỤ PHẦN MỀM",
+    "web_app_solutions": "Giải pháp Web/App",
+    "custom_development": "Phát triển theo yêu cầu",
+    "digital_transformation": "Chuyển đổi số",
+    "automation_cloud": "Tự động hóa & Cloud",
+    "tech_consulting": "Tư vấn công nghệ",
+    "architecture_strategy": "Kiến trúc & Chiến lược",
+    "about_sevo": "Về SEVO",
+    "blog": "Blog",
+    "students": "Học viên",
+    "project_consulting": "Tư vấn Dự án"
+  },
+  "footer": {
+    "about_description": "Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo trong kỷ nguyên số.",
+    "contact": "Liên hệ",
+    "information": "Thông tin",
+    "about_us": "Về chúng tôi",
+    "courses": "Khóa học",
+    "privacy_policy": "Chính sách bảo mật",
+    "terms_of_service": "Điều khoản dịch vụ",
+    "copyright": "© {year} SEVO Education. Thiết kế bởi Đội ngũ SEVO."
+  },
+  "about": {
+    "general_intro": "Giới thiệu chung"
+  },
+  "contact": {
+    "title": "Đăng ký tư vấn miễn phí",
+    "subtitle": "Để lại thông tin để nhận tư vấn chi tiết về lộ trình học và ưu đãi mới nhất từ Sevo.",
+    "benefit_test": "Kiểm tra năng lực đầu vào miễn phí",
+    "benefit_trial": "Học thử 1 buổi trải nghiệm",
+    "benefit_support": "Cam kết hỗ trợ 1-1",
+    "form_title": "Form Đăng Ký",
+    "parent_name": "Họ tên phụ huynh *",
+    "parent_name_placeholder": "Nhập họ tên",
+    "phone": "Số điện thoại *",
+    "phone_placeholder": "0xxx xxx xxx",
+    "student_name": "Tên học viên (Tuổi)",
+    "student_name_placeholder": "Ví dụ: Bé Bi (8 tuổi)",
+    "submit": "Gửi đăng ký ngay",
+    "submitting": "Đang gửi...",
+    "success": "Đăng ký thành công! Chúng tôi sẽ liên hệ lại sớm.",
+    "error": "Có lỗi xảy ra, vui lòng thử lại sau."
+  },
+  "hero": {
+    "title": "Làm chủ kỹ năng số -\nBứt phá sự nghiệp tương lai.",
+    "subtitle": "Hệ sinh thái đào tạo thực chiến: Lập trình, Ngoại ngữ & Sáng tạo nội dung. Trang bị tư duy, rèn luyện kỹ năng để tự tin gia nhập thị trường lao động toàn cầu.",
+    "cta_courses": "Tìm khóa học phù hợp →",
+    "cta_intro": "Xem video giới thiệu ▷",
+    "trust_bar": "Hơn 5.000 học viên đã tốt nghiệp | Đối tác tuyển dụng"
+  },
+  "auth": {
+    "login_title": "SEVO Đăng nhập",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "login_button": "Đăng nhập",
+    "logging_in": "Đang đăng nhập...",
+    "login_failed": "Đăng nhập thất bại",
+    "default_credentials": "Thông tin đăng nhập mặc định:"
+  }
+}

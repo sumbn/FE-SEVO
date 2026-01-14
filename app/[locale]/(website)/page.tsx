@@ -1,11 +1,16 @@
 import { getContent } from "@/lib/content"
 import { SectionRenderer } from "@/components/SectionRenderer"
 import { ClientBackground3D } from "@/components/ui/ClientBackground3D"
+import { DebugClientLogs } from "@/components/DebugClientLogs"
 
-export default async function HomePage() {
-  const content = await getContent()
-  console.log("HomePage Content Keys:", Object.keys(content))
-  if (content.hero) console.log("Hero raw:", typeof content.hero === 'string' ? content.hero.substring(0, 50) : '[object]')
+export default async function HomePage({
+  params
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  console.log("🚀 [HomePage] Rendering với params:", { locale })
+  const content = await getContent(locale)
 
   // Parse layout configuration or use default
   let layout = []
@@ -17,13 +22,9 @@ export default async function HomePage() {
     console.error("Failed to parse homepage_layout:", e)
   }
 
-  // Fallback if no layout defined -> Show nothing (User requested clean state)
-  if (!layout.length) {
-    // layout = [] 
-  }
-
   return (
     <>
+      <DebugClientLogs />
       {/* Full-page 3D Background */}
       <ClientBackground3D />
 
@@ -42,3 +43,4 @@ export default async function HomePage() {
     </>
   )
 }
+

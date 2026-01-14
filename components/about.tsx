@@ -1,7 +1,9 @@
 import { ContentMap } from "@/types/content"
 import { FeatureSection } from "./features/FeatureSection"
+import { useTranslation } from "./providers/I18nProvider"
 
 export default function About({ content }: { content: ContentMap }) {
+  const { t } = useTranslation()
   let aboutData = { title: '', text: '', features: [] }
   try {
     if (content.about) {
@@ -20,7 +22,7 @@ export default function About({ content }: { content: ContentMap }) {
       {/* Use FeatureSection directly to replace the old layout as requested */}
       <FeatureSection
         title={aboutData.title || ""}
-        subtitle="Giới thiệu chung"
+        subtitle={t('about.general_intro')}
         description={aboutData.text || ""}
         features={features}
         variant="light"

@@ -1,0 +1,68 @@
+{
+  "header": {
+    "training": "TRAINING",
+    "advanced_programming": "Advanced Programming",
+    "zero_to_hero": "From Zero to Hero",
+    "tech_language": "Tech Language",
+    "it_communication": "IT Communication",
+    "schedule": "Schedule",
+    "software_services": "SOFTWARE SERVICES",
+    "web_app_solutions": "Web/App Solutions",
+    "custom_development": "Custom Development",
+    "digital_transformation": "Digital Transformation",
+    "automation_cloud": "Automation & Cloud",
+    "tech_consulting": "Tech Consulting",
+    "architecture_strategy": "Architecture & Strategy",
+    "about_sevo": "About SEVO",
+    "blog": "Blog",
+    "students": "Students",
+    "project_consulting": "Project Consulting"
+  },
+  "footer": {
+    "about_description": "Learning programming for kids - Developing logic and creativity in the digital age.",
+    "contact": "Contact",
+    "information": "Information",
+    "about_us": "About Us",
+    "courses": "Courses",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "copyright": "© {year} SEVO Education. Designed by SEVO Team."
+  },
+  "about": {
+    "general_intro": "General Introduction"
+  },
+  "contact": {
+    "title": "Free Consulting Registration",
+    "subtitle": "Leave your information to receive detailed advice on the learning path and latest offers from Sevo.",
+    "benefit_test": "Free entrance exam",
+    "benefit_trial": "1-day trial class",
+    "benefit_support": "1-on-1 support commitment",
+    "form_title": "Registration Form",
+    "parent_name": "Parent Name *",
+    "parent_name_placeholder": "Enter full name",
+    "phone": "Phone Number *",
+    "phone_placeholder": "0xxx xxx xxx",
+    "student_name": "Student Name (Age)",
+    "student_name_placeholder": "Example: Bi (8 years old)",
+    "submit": "Register Now",
+    "submitting": "Submitting...",
+    "success": "Success! We will contact you soon.",
+    "error": "An error occurred, please try again later."
+  },
+  "hero": {
+    "title": "Master Digital Skills -\nBreakthrough Your Future Career.",
+    "subtitle": "Practical training ecosystem: Programming, Languages & Content Creation. Equipping mindset, training skills to confidently join the global labor market.",
+    "cta_courses": "Find the right course →",
+    "cta_intro": "Watch intro video ▷",
+    "trust_bar": "Over 5,000 students graduated | Hiring partners"
+  },
+  "auth": {
+    "login_title": "SEVO Login",
+    "email": "Email",
+    "password": "Password",
+    "login_button": "Login",
+    "logging_in": "Logging in...",
+    "login_failed": "Login failed",
+    "default_credentials": "Default credentials:"
+  }
+}

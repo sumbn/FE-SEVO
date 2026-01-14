@@ -120,7 +120,7 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
             processQueue(new Error('Session expired'), null);
             isRefreshing = false;
             accessToken = null;
-            if (typeof window !== 'undefined') {
+            if (requiresAuth && typeof window !== 'undefined') {
               window.location.href = '/login';
             }
             throw new Error('Session expired');
@@ -129,7 +129,7 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
           processQueue(error as Error, null);
           isRefreshing = false;
           accessToken = null;
-          if (typeof window !== 'undefined') {
+          if (requiresAuth && typeof window !== 'undefined') {
             window.location.href = '/login';
           }
           throw error;

@@ -1,8 +1,11 @@
 import { getContent } from "@/lib/content"
 import { Mail, Phone, MapPin, Facebook, Instagram, Link as LinkIcon, Globe } from "lucide-react"
+import { getDictionary } from "@/lib/dictionaries"
+import Link from "../ui/Link"
 
-export default async function Footer() {
-  const content = await getContent()
+export default async function Footer({ locale = 'vi' }: { locale?: string }) {
+  const content = await getContent(locale)
+  const dict = await getDictionary(locale)
 
   // Map icon keys to Lucide components
   const iconMap: Record<string, React.ReactNode> = {
@@ -16,7 +19,7 @@ export default async function Footer() {
   }
 
   // Parse Global Data
-  let globalData = { site_name: 'Trung Tâm Giáo Dục Công Nghệ', logo_text: '', contact_info: [] }
+  let globalData = { site_name: 'SEVO Education', logo_text: '', contact_info: [] }
   try {
     if (content.global) {
       globalData = typeof content.global === 'string' ? JSON.parse(content.global) : content.global
@@ -34,19 +37,19 @@ export default async function Footer() {
               {globalData.site_name}
             </h3>
             <p className="text-slate-400 max-w-sm leading-relaxed">
-              Học lập trình cho trẻ em - Phát triển tư duy logic và sáng tạo trong kỷ nguyên số.
+              {dict.footer.about_description}
             </p>
           </div>
 
           <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-white/90">Liên hệ</h4>
+            <h4 className="text-lg font-semibold text-white/90">{dict.footer.contact}</h4>
             <div className="space-y-4 text-slate-400">
               {(() => {
                 if (Array.isArray(globalData.contact_info) && globalData.contact_info.length > 0) {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   return globalData.contact_info.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-start gap-3 group transition-colors hover:text-white">
-                      <div className="mt-1 text-primary-400">
+                      <div className="mt-1 text-blue-400">
                         {iconMap[item.icon] || <MapPin className="w-4 h-4" />}
                       </div>
                       <div>
@@ -62,19 +65,19 @@ export default async function Footer() {
           </div>
 
           <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-white/90">Thông tin</h4>
+            <h4 className="text-lg font-semibold text-white/90">{dict.footer.information}</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#" className="hover:text-white transition-colors">Về chúng tôi</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Khóa học</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Chính sách bảo mật</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Điều khoản dịch vụ</a></li>
+              <li><Link href="/about" className="hover:text-white transition-colors">{dict.footer.about_us}</Link></li>
+              <li><Link href="/courses" className="hover:text-white transition-colors">{dict.footer.courses}</Link></li>
+              <li><Link href="/privacy" className="hover:text-white transition-colors">{dict.footer.privacy_policy}</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition-colors">{dict.footer.terms_of_service}</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-white/5 text-center">
           <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} {globalData.site_name}. Thiết kế bởi Đội ngũ SEVO.
+            {dict.footer.copyright.replace('{year}', new Date().getFullYear().toString())}
           </p>
         </div>
       </div>

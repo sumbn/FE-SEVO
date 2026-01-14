@@ -3,11 +3,13 @@
 import dynamic from 'next/dynamic'
 import HeroCarousel from './ui/HeroCarousel'
 import { ContentMap } from "@/types/content"
+import { useTranslation } from './providers/I18nProvider'
 
 // Load 3D background only on client side (removed from here, handled globally)
 // const TechBackground = dynamic(() => import('./ui/TechBackground'), { ssr: false })
 
 export default function Hero({ content }: { content: ContentMap }) {
+  const { t } = useTranslation()
   // Access the hero object (it might be a JSON string from API or parsed object depending on fetcher)
   // Our fetcher usually returns strings, so we parse it.
   let heroData = { title: '', subtitle: '', ctas: [] }
@@ -28,14 +30,14 @@ export default function Hero({ content }: { content: ContentMap }) {
 
   // Default content (High-tech redesign)
   const defaultHero = {
-    title: "Làm chủ kỹ năng số -\nBứt phá sự nghiệp tương lai.",
-    subtitle: "Hệ sinh thái đào tạo thực chiến: Lập trình, Ngoại ngữ & Sáng tạo nội dung. Trang bị tư duy, rèn luyện kỹ năng để tự tin gia nhập thị trường lao động toàn cầu.",
+    title: t('hero.title'),
+    subtitle: t('hero.subtitle'),
     ctas: [
-      { label: "Tìm khóa học phù hợp →", link: "#courses", variant: "primary" },
-      { label: "Xem video giới thiệu ▷", link: "#intro", variant: "outline" }
+      { label: t('hero.cta_courses'), link: "#courses", variant: "primary" },
+      { label: t('hero.cta_intro'), link: "#intro", variant: "outline" }
     ],
     showTrustBar: true,
-    trustBarText: "Hơn 5.000 học viên đã tốt nghiệp | Đối tác tuyển dụng",
+    trustBarText: t('hero.trust_bar'),
     trustBarLogos: [
       { src: "/logos/partner1.png", alt: "Partner 1" },
       { src: "/logos/partner2.png", alt: "Partner 2" },
