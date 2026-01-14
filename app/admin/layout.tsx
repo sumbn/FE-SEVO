@@ -37,7 +37,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-gray-200 bg-white p-6 shadow-sm">
+      <aside className="sticky top-0 h-screen w-64 border-r border-gray-200 bg-white p-6 shadow-sm flex flex-col overflow-y-auto shrink-0">
         <div className="mb-10">
           <h2 className="text-2xl font-black text-blue-600">SEVO Admin</h2>
           <p className="mt-1 text-xs text-gray-400 uppercase tracking-widest font-bold">Hệ thống quản trị</p>
@@ -59,7 +59,8 @@ export default function AdminLayout({
           ))}
         </nav>
 
-        <div className="absolute bottom-10 w-52">
+        {/* Account Section at bottom */}
+        <div className="mt-auto pt-10">
           <div className="mb-6 rounded-xl bg-gray-50 p-4 border border-gray-100">
             <div className="text-xs font-bold text-gray-400 uppercase">Tài khoản</div>
             <div className="mt-1 truncate text-sm font-black text-gray-900">{user?.name || 'Admin'}</div>
@@ -69,7 +70,7 @@ export default function AdminLayout({
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-black text-red-500 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
           >
-            退出 🚪 Đăng xuất
+            🚪 Đăng xuất
           </button>
         </div>
       </aside>
