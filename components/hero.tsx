@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import HeroCarousel from './ui/HeroCarousel'
 import { ContentMap } from "@/types/content"
 
 // Load 3D background only on client side (removed from here, handled globally)
@@ -41,7 +42,10 @@ export default function Hero({ content }: { content: ContentMap }) {
       { src: "/logos/partner3.png", alt: "Partner 3" },
       { src: "/logos/partner4.png", alt: "Partner 4" }
     ],
-    showVisual: true
+    showVisual: true,
+    visualImages: [
+      { src: '/hero-collage.png', alt: 'Hero Image' }
+    ]
   }
 
   // Merge CMS data on top of defaults
@@ -128,26 +132,17 @@ export default function Hero({ content }: { content: ContentMap }) {
           )}
         </div>
 
-        {/* Right Column: Visual Collage */}
+        {/* Right Column: Visual Carousel */}
         {heroContent.showVisual && (
           <div className="relative block lg:block perspective-1000 mt-8 lg:mt-0">
-            {/* Main Image with 3D tilt effect */}
+            {/* Main Carousel with 3D tilt effect */}
             <div className="relative z-10 transform lg:rotate-y-[-12deg] lg:rotate-x-[5deg] hover:rotate-0 transition-transform duration-700 ease-out preserve-3d">
-              <div className="rounded-3xl overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(0,243,255,0.2)] bg-black/50 backdrop-blur-xl">
-                {/* Using the generated hero collage placeholder */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/hero-collage.png"
-                  alt="Sevo Ecosystem Collage"
-                  className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity"
-                />
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/40 to-transparent mix-blend-overlay" />
-              </div>
-
-              {/* Floating Elements for depth */}
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-[var(--color-neon-purple)] rounded-full blur-[50px] opacity-40 animate-pulse" />
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[var(--color-neon-blue)] rounded-full blur-[60px] opacity-30 animate-pulse delay-1000" />
+              <HeroCarousel
+                images={heroContent.visualImages || []}
+                autoPlayInterval={5000}
+                showControls={true}
+                showIndicators={true}
+              />
             </div>
           </div>
         )}

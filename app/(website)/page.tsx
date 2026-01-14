@@ -5,7 +5,7 @@ import { ClientBackground3D } from "@/components/ui/ClientBackground3D"
 export default async function HomePage() {
   const content = await getContent()
   console.log("HomePage Content Keys:", Object.keys(content))
-  if (content.hero) console.log("Hero raw:", content.hero.substring(0, 50))
+  if (content.hero) console.log("Hero raw:", typeof content.hero === 'string' ? content.hero.substring(0, 50) : '[object]')
 
   // Parse layout configuration or use default
   let layout = []

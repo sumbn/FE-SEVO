@@ -7,6 +7,7 @@ import { ListEditor } from '../components/ListEditor'
 const ITEM_TEMPLATES: Record<string, any> = {
   'hero.trustBarLogos': { alt: '', src: '' },
   'hero.ctas': { label: '', href: '', primary: true },
+  'hero.visualImages': { src: '', alt: '' },
   'global.contact_info': { label: '', value: '', icon: '' },
   'about.features': { title: '', description: '', icon: '' },
   'global.logo': { text: '', src: '' }
@@ -41,10 +42,13 @@ export default function ContentPage() {
   }
 
   const handleEdit = (key: string, value: any, type: string = 'text') => {
-    // 1. If value is missing, check template
+    // 1. If value is missing, check template or default for type
     let finalValue = value
     if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
-      if (ITEM_TEMPLATES[key]) {
+      // For list types, always start with empty array, not template
+      if (type === 'list') {
+        finalValue = []
+      } else if (ITEM_TEMPLATES[key]) {
         finalValue = ITEM_TEMPLATES[key]
       }
     }
@@ -487,7 +491,14 @@ export default function ContentPage() {
                 ]}
               />
 
-              <FieldRow label="Show Visual (Collage)" rootKey="hero" fieldKey="showVisual" type="boolean" />
+              <GroupedFeatureCard
+                title="Hero Visual (Carousel)"
+                rootKey="hero"
+                toggleKey="showVisual"
+                fields={[
+                  { key: 'visualImages', label: 'Image List', type: 'list' }
+                ]}
+              />
             </SectionCard>
           )
         }

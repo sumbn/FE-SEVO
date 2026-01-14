@@ -1,3 +1,5 @@
+import { LoggingService } from './logging';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 type RequestOptions = Omit<RequestInit, 'headers'> & {
@@ -27,6 +29,10 @@ const processQueue = (error: Error | null, token: string | null = null) => {
  * API fetch wrapper with automatic token refresh
  * Uses httpOnly cookies for refresh token
  * Access token is stored in memory (not localStorage)
+ * 
+ * Features:
+ * - Automatic correlation ID propagation
+ * - Error logging via LoggingService
  */
 let accessToken: string | null = null;
 
@@ -35,6 +41,8 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
   
   const headers: Record<string, string> = {
     ...options.headers,
+    // Add correlation ID for end-to-end tracing
+    'X-Correlation-ID': LoggingService.getCorrelationId(),
   };
 
   // Only set application/json if not FormData and not explicitly overridden
@@ -62,6 +70,12 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
   try {
     const response = await fetch(`${API_URL}${endpoint}`, finalOptions);
 
+    // Capture correlation ID from response if present
+    const responseCorrelationId = response.headers.get('X-Correlation-ID');
+    if (responseCorrelationId) {
+      LoggingService.setCorrelationId(responseCorrelationId);
+    }
+
     // Handle 401 - Token expired, try to refresh
     if (response.status === 401 && !endpoint.includes('/auth/refresh')) {
       // Check if we're already refreshing
@@ -73,6 +87,9 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
           const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include', // Send refresh token cookie
+            headers: {
+              'X-Correlation-ID': LoggingService.getCorrelationId(),
+            },
           });
 
           if (refreshResponse.ok) {
@@ -99,6 +116,7 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
             return retryResult.data;
           } else {
             // Refresh failed - logout
+            LoggingService.warn('Session refresh failed', { endpoint });
             processQueue(new Error('Session expired'), null);
             isRefreshing = false;
             accessToken = null;
@@ -136,11 +154,23 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
       const error: any = new Error(result.message || 'API Request Failed');
       error.errorCode = result.errorCode;
       error.statusCode = response.status;
+      
+      // Log API errors
+      LoggingService.error('API request failed', error as Error, {
+        endpoint,
+        status: response.status,
+        errorCode: result.errorCode,
+      });
+      
       throw error;
     }
 
     return result.data;
   } catch (error) {
+    // Log network/fetch errors
+    if (error instanceof TypeError) {
+      LoggingService.error('Network error', error as Error, { endpoint });
+    }
     throw error;
   }
 }
@@ -150,6 +180,7 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
  */
 export function setAccessToken(token: string) {
   accessToken = token;
+  LoggingService.info('Access token set');
 }
 
 /**
@@ -157,6 +188,9 @@ export function setAccessToken(token: string) {
  */
 export function clearAccessToken() {
   accessToken = null;
+  LoggingService.info('Access token cleared');
+  // Reset correlation ID for new session
+  LoggingService.resetCorrelationId();
 }
 
 /**

@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-import { AuthProvider } from "@/components/providers/AuthProvider"
+import { ClientProviders } from "@/components/providers/ClientProviders"
 
 export default function RootLayout({
   children,
@@ -33,9 +33,9 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning>
-        <AuthProvider>
+        <ClientProviders>
           {children}
-        </AuthProvider>
+        </ClientProviders>
       </body>
     </html>
   )
