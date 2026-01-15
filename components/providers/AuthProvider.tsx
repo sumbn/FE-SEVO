@@ -30,9 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { accessToken, user } = result.data
         setAccessToken(accessToken)
         setUser(user)
+      } else if (response.status !== 401) {
+        // Only log errors other than 401 (which is normal for unauthenticated start)
+        console.warn('Auth refresh failed with status:', response.status)
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error)
+      // Network error or parsing error
+      console.error('Auth initialization failed error:', error)
     } finally {
       setIsLoading(false)
     }

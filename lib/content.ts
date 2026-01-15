@@ -4,7 +4,7 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api
 
 export async function getContent(locale: string = 'vi'): Promise<ContentMap> {
   try {
-    const res = await fetch(`${API_URL}?locale=${locale}`, {
+    const res = await fetch(`${API_URL}?lang=${locale}`, {
       cache: 'no-store', // CMS → luôn lấy mới
     });
 
@@ -13,8 +13,8 @@ export async function getContent(locale: string = 'vi'): Promise<ContentMap> {
       return {};
     }
 
-    const result = await res.json();
-    return result.data || {};
+    const result = await res.json().catch(() => null);
+    return result?.data || {};
   } catch (error) {
     console.error('Fetch content failed:', error);
     return {};

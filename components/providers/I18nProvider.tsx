@@ -11,6 +11,8 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
+import { setLocale } from '@/lib/api'
+
 export function I18nProvider({
   children,
   locale,
@@ -20,6 +22,11 @@ export function I18nProvider({
   locale: string
   dictionary: Dictionary
 }) {
+  // Sync with API client on every render (or use useEffect for mount+change)
+  if (typeof window !== 'undefined') {
+    setLocale(locale)
+  }
+
   return (
     <I18nContext.Provider value={{ locale, dictionary }}>
       {children}

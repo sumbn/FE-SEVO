@@ -39,8 +39,26 @@ let accessToken: string | null = null;
 export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
   const { requiresAuth = false, ...fetchOptions } = options;
   
+  // Add language header
+  let locale = 'vi';
+  if (typeof window === 'undefined') {
+    // Server side: Read from the header set by middleware
+    try {
+      const { headers: nextHeaders } = await import('next/headers');
+      const headerList = await nextHeaders();
+      locale = headerList.get('x-locale') || 'vi';
+    } catch (e) {
+      // In case we are not in a request context (e.g. background task)
+      locale = 'vi';
+    }
+  } else {
+    // Client side: Read from the module variable
+    locale = currentLocale;
+  }
+
   const headers: Record<string, string> = {
     ...options.headers,
+    'Accept-Language': locale,
     // Add correlation ID for end-to-end tracing
     'X-Correlation-ID': LoggingService.getCorrelationId(),
   };
@@ -151,21 +169,21 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const error: any = new Error(result.message || 'API Request Failed');
-      error.errorCode = result.errorCode;
+      const error: any = new Error(result?.message || 'API Request Failed');
+      error.errorCode = result?.errorCode;
       error.statusCode = response.status;
       
       // Log API errors
       LoggingService.error('API request failed', error as Error, {
         endpoint,
         status: response.status,
-        errorCode: result.errorCode,
+        errorCode: result?.errorCode,
       });
       
       throw error;
     }
 
-    return result.data;
+    return result?.data ?? null;
   } catch (error) {
     // Log network/fetch errors
     if (error instanceof TypeError) {
@@ -198,4 +216,17 @@ export function clearAccessToken() {
  */
 export function getAccessToken() {
   return accessToken;
+}
+
+/**
+ * Handle locale for client-side requests
+ */
+let currentLocale = 'vi';
+
+export function setLocale(locale: string) {
+  currentLocale = locale;
+}
+
+export function getLocale() {
+  return currentLocale;
 }
