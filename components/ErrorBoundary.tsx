@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { LoggingService } from '@/lib/logging'
+import { logToSheet } from '@/lib/logger'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -40,8 +40,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to LoggingService
-    LoggingService.error('UI Crash detected', error, {
+    // Log error to LoggingService via logToSheet utility
+    logToSheet('error', 'UI Crash detected', {
+      error,
       component: this.props.componentName || 'Unknown',
       component_stack: errorInfo.componentStack,
     })

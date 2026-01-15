@@ -57,7 +57,7 @@ class LoggingServiceClass implements ILogger {
   
   private readonly FLUSH_INTERVAL = 5000; // 5 seconds
   private readonly MAX_BUFFER_SIZE = 20;
-  private readonly API_ENDPOINT = '/api/internal/logs';
+  private readonly API_ENDPOINT = '/api/logs';
   
   constructor() {
     this.correlationId = generateUUID();
